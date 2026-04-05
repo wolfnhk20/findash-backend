@@ -10,6 +10,7 @@ import java.util.Date;
 
 @Component
 public class JwtUtil {
+
     @Value("${jwt.secret}")
     private String SECRET;
 
@@ -27,29 +28,29 @@ public class JwtUtil {
                 .compact();
     }
 
-    public String extractEmail(String token) {
+    private Claims extractAllClaims(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(getSignKey())
                 .build()
                 .parseClaimsJws(token)
-                .getBody()
-                .getSubject();
+                .getBody();
+    }
+
+    public String extractEmail(String token) {
+        return extractAllClaims(token).getSubject();
     }
 
     public String extractRole(String token) {
-        return (String) Jwts.parserBuilder()
-                .setSigningKey(getSignKey())
-                .build()
-                .parseClaimsJws(token)
-                .getBody()
-                .get("role");
+        return (String) extractAllClaims(token).get("role");
     }
 
     public boolean isValid(String token) {
         try {
-            Jwts.parserBuilder().setSigningKey(getSignKey()).build().parseClaimsJws(token);
-            return true;
-        } catch (Exception e) {
+            Claims claims = extractAllClaims(token);
+
+            return !claims.getExpiration().before(new Date());
+
+        } catch (JwtException | IllegalArgumentException e) {
             return false;
         }
     }

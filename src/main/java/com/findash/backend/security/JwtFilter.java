@@ -1,57 +1,64 @@
 package com.findash.backend.security;
 
-import jakarta.servlet.*;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.beans.factory.annotation.Autowired;
+
 import org.springframework.stereotype.Component;
+import org.springframework.web.filter.OncePerRequestFilter;
+
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
-import java.util.Collections;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
-import java.util.List;
 import java.io.IOException;
+import java.util.List;
 
 @Component
-public class JwtFilter implements Filter {
+public class JwtFilter extends OncePerRequestFilter {
 
-    @Autowired
-    private JwtUtil jwtUtil;
+    private final JwtUtil jwtUtil;
+
+    public JwtFilter(JwtUtil jwtUtil) {
+        this.jwtUtil = jwtUtil;
+    }
 
     @Override
-    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
-            throws IOException, ServletException {
+    protected void doFilterInternal(HttpServletRequest request,
+                                    HttpServletResponse response,
+                                    FilterChain filterChain)
+            throws ServletException, IOException {
 
-        HttpServletRequest req = (HttpServletRequest) request;
-        String header = req.getHeader("Authorization");
+        String header = request.getHeader("Authorization");
 
         if (header != null && header.startsWith("Bearer ")) {
 
             String token = header.substring(7);
-            String role = jwtUtil.extractRole(token);
 
             try {
                 if (!jwtUtil.isValid(token)) {
-                    ((HttpServletResponse) response).sendError(401, "Invalid Token");
+                    response.sendError(401, "Invalid Token");
                     return;
                 }
+
+                String email = jwtUtil.extractEmail(token);
+                String role = jwtUtil.extractRole(token);
+
+                List<SimpleGrantedAuthority> authorities =
+                        List.of(new SimpleGrantedAuthority("ROLE_" + role));
+
+                UsernamePasswordAuthenticationToken auth =
+                        new UsernamePasswordAuthenticationToken(email, null, authorities);
+
+                SecurityContextHolder.getContext().setAuthentication(auth);
+
             } catch (Exception e) {
-                ((HttpServletResponse) response).sendError(401, "Invalid Token");
+                response.sendError(401, "Invalid Token");
                 return;
             }
-
-            String email = jwtUtil.extractEmail(token);
-
-            List<SimpleGrantedAuthority> authorities =
-                    List.of(new SimpleGrantedAuthority("ROLE_" + role));
-
-            UsernamePasswordAuthenticationToken auth =
-                    new UsernamePasswordAuthenticationToken(email, null, authorities);
-
-            SecurityContextHolder.getContext().setAuthentication(auth);
         }
 
-        chain.doFilter(request, response);
+        filterChain.doFilter(request, response);
     }
 }

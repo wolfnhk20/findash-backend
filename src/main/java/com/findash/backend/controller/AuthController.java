@@ -1,9 +1,14 @@
 package com.findash.backend.controller;
 
+import com.findash.backend.exception.BadRequestException;
+import com.findash.backend.model.Status;
+import com.findash.backend.model.User;
 import com.findash.backend.repository.UserRepository;
 import com.findash.backend.security.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 @RestController
 @RequestMapping("/auth")
@@ -16,11 +21,22 @@ public class AuthController {
     private UserRepository userRepository;
 
     @PostMapping("/login")
-    public String login(@RequestParam String email) {
+    public Map<String, Object> login(@RequestParam String email) {
 
-        var user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new BadRequestException("User not found"));
 
-        return jwtUtil.generateToken(user.getEmail(), user.getRole().name());
+        if (user.getStatus() != Status.ACTIVE) {
+            throw new BadRequestException("User account is inactive");
+        }
+
+        String token = jwtUtil.generateToken(user.getEmail(), user.getRole().name());
+
+        return Map.of(
+                "token", token,
+                "userId", user.getId(),
+                "email", user.getEmail(),
+                "role", user.getRole().name()
+        );
     }
 }

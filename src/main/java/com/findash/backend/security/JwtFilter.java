@@ -43,7 +43,7 @@ public class JwtFilter extends OncePerRequestFilter {
                 }
 
                 String email = jwtUtil.extractEmail(token);
-                String role = jwtUtil.extractRole(token);
+                String role = jwtUtil.extractRole(token).toUpperCase();
 
                 List<SimpleGrantedAuthority> authorities =
                         List.of(new SimpleGrantedAuthority("ROLE_" + role));

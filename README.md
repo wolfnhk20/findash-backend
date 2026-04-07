@@ -179,7 +179,7 @@ VIEWER ownership is validated server-side. Passing another user's `userId` retur
 ## Deployment / Live API
  
 - Render: [https://findash-backend-m4ta.onrender.com/](https://findash-backend-m4ta.onrender.com/)
-- Railway: [https://findash-backend-production.up.railway.app](https://findash-backend-production.up.railway.app)
+- Railway: [https://findash-backend-m4ta.onrender.com](https://findash-backend-m4ta.onrender.com)
  
 Railway is used for faster response and to avoid cold start delays.
 
